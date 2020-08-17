@@ -1,29 +1,36 @@
+/*
+ Deep sleep with periodic NTP update
+ This example stores a variable in the RTC memory
+ to keep track of the last time NTP was checked
+ Larry Bernstone <lbernstone@gmail.com>
+*/
+ 
 #include <WiFi.h>
 #include <esp_sleep.h>
 
 #define NTP_CYCLE 3600  // one hour
-#define NTP_TIMEOUT 30  // 30 seconds
-#define TIME_TO_SLEEP 3  // five minutes
+#define NTP_TIMEOUT 30  // seconds
+#define TIME_TO_SLEEP 30  // seconds
 #define NTP_SRV "time-a-b.nist.gov"
-#define NOW time(NULL)
 
 RTC_DATA_ATTR unsigned long lastUpdate = 0;
 
 void setup() {
   Serial.begin(115200);
-  Serial.printf("Now: %lu\nLast Update: %lu\n", NOW, lastUpdate);
-  if (lastUpdate > NOW) lastUpdate = 0;
-  if ((lastUpdate == 0) || ((NOW - lastUpdate) > NTP_CYCLE)) { 
+  unsigned long now = time(NULL);
+  Serial.printf("Now: %lu\nLast Update: %lu\n", now, lastUpdate);
+  if (lastUpdate > now) lastUpdate = 0;
 
-    WiFi.begin("larryb","clownfish");
+  if ((lastUpdate == 0) || ((now - lastUpdate) > NTP_CYCLE)) { 
+    WiFi.begin("ssid","passwd");
     if (WiFi.waitForConnectResult() != WL_CONNECTED) {
       Serial.println("Unable to connect to WiFi");
       return;
     }
 
-    struct tm now;
+    struct tm tm_now;
     configTime(0, 0, NTP_SRV); //UTC time
-    if (!getLocalTime(&now, NTP_TIMEOUT * 1000ULL)) {
+    if (!getLocalTime(&tm_now, NTP_TIMEOUT * 1000ULL)) {
       Serial.println("Unable to sync with NTP server");
       return;
     }
